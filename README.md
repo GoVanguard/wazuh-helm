@@ -1,4 +1,4 @@
-wazuh-helm (https://govanguard.io)
+wazuh-helm (https://govanguard.com)
 ==
 
 ## Authors:
