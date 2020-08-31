@@ -1,0 +1,86 @@
+{{- if .Values.elasticsearch.builtin.enabled -}}
+#; Copyright (C) 2019 GoVanguard Inc.
+#
+# This program is a free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation.
+# 
+# Portions of code based on code and concepts from 
+# wazuh/wazuh-kubernetes Copyright (C) 2018 Wazuh Inc.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-kibana
+  namespace: wazuh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh-kibana
+  template:
+    metadata:
+      labels:
+        app: wazuh-kibana
+      name: wazuh-kibana
+    spec:
+      containers:
+        - name: wazuh-kibana
+          image: {{ printf "%s/wazuh-kibana:%s" .Values.versions.imagesource .Values.versions.kibana }}
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 400m
+              memory: 1024Mi
+          ports:
+            - containerPort: 5601
+              name: kibana
+          env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=512"
+            - name: ELASTICSEARCH_URL
+              value: http://elasticsearch:9200
+            - name: ELASTICSEARCH_HOSTS
+              value: http://elasticsearch:9200
+{{- else -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-kibana
+  namespace: wazuh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh-kibana
+  template:
+    metadata:
+      labels:
+        app: wazuh-kibana
+      name: wazuh-kibana
+    spec:
+      containers:
+        - name: wazuh-kibana
+          image: {{ printf "%s/wazuh-kibana:%s" .Values.versions.imagesource .Values.versions.kibana }}
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 400m
+              memory: 1024Mi
+          ports:
+            - containerPort: 5601
+              name: kibana
+          env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=512"
+            - name: ELASTICSEARCH_URL
+              value: {{ .Values.elasticsearch.remote.host }}
+            - name: ELASTICSEARCH_HOSTS
+              value: {{ .Values.elasticsearch.remote.host }}
+{{- end }}

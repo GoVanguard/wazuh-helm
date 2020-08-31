@@ -1,0 +1,114 @@
+{{- if .Values.elasticsearch.builtin.enabled -}}
+# Copyright (C) 2019 GoVanguard Inc.
+#
+# This program is a free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation.
+# 
+# Portions of code based on code and concepts from 
+# wazuh/wazuh-kubernetes Copyright (C) 2018 Wazuh Inc.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: wazuh
+  labels:
+    io.kompose.service: elasticsearch
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: elasticsearch
+  serviceName: elasticsearch
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        io.kompose.service: elasticsearch
+        app: elasticsearch
+      name: elasticsearch
+    spec:
+      initContainers:
+        - name: volume-mount-hack
+          image: busybox
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+          command:
+            - sh
+            - '-c'
+            - 'chown -R 1000:1000 /usr/share/elasticsearch/data'
+          volumeMounts:
+            - name: pvc-es
+              mountPath: /usr/share/elasticsearch/data
+        - name: increase-the-vm-max-map-count
+          image: busybox
+          command:
+            - sysctl
+            - -w
+            - vm.max_map_count=262144
+          securityContext:
+            privileged: true    
+      containers:
+        - name: elasticsearch
+          image: {{ printf "docker.elastic.co/elasticsearch/elasticsearch:%s" .Values.versions.elasticsearch }}
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1
+              memory: 2Gi
+          env:
+            - name: ES_JAVA_OPTS
+              value: '-Xms1024m -Xmx1024m'
+            - name: bootstrap.memory_lock
+              value: 'false'
+            - name: namespace
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: node.name
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: cluster.name
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: cluster.initial_master_nodes
+              value: "elasticsearch-0"
+            - name: node.master
+              value: "true"
+            - name: node.ingest
+              value: "false"
+            - name: node.data
+              value: "false"
+            - name: discovery.zen.ping.unicast.hosts
+              value: "elasticsearch"
+            - name: network.host
+              value: 0.0.0.0
+          volumeMounts:
+            - name: pvc-es
+              mountPath: /usr/share/elasticsearch/data
+          ports:
+            - containerPort: 9200
+              name: es-rest
+            - containerPort: 9300
+              name: es-nodes
+  volumeClaimTemplates:
+    - metadata:
+        name: pvc-es
+      spec:
+        accessModes:
+          - {{ .Values.disk.accessmode }}
+        storageClassName: {{ .Values.disk.storageclass }}
+        resources:
+          requests:
+            storage: {{ .Values.elasticsearch.data.size }}
+{{- end }}

@@ -1,0 +1,76 @@
+# Copyright (C) 2019 GoVanguard Inc.
+#
+# This program is a free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation.
+# 
+# Portions of code based on code and concepts from 
+# wazuh/wazuh-kubernetes Copyright (C) 2018 Wazuh Inc.
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wazuh-manager-master
+  namespace: wazuh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh-manager
+      node-type: master
+  serviceName: wazuh-cluster
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: wazuh-manager
+        node-type: master
+      name: wazuh-manager-master
+      annotations:
+        iam.amazonaws.com/role: arn:aws:sts::401740808892:assumed-role/wazuh
+    spec:
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: config
+          configMap:
+            name: wazuh-manager-master-conf
+      serviceAccountName: 'wazuh'
+      containers:
+        - name: wazuh-manager
+          image: {{ printf "%s/wazuh:%s" .Values.versions.imagesource .Values.versions.wazuh }}
+          resources:
+            requests:
+              cpu: 500m
+              memory: 3Gi
+            limits:
+              cpu: 1
+              memory: 4Gi
+          volumeMounts:
+            - name: config
+              mountPath: /wazuh-config-mount/etc/ossec.conf
+              subPath: ossec.conf
+              readOnly: true
+            - name: pvc-wz
+              mountPath: /var/ossec/data
+          ports:
+            - containerPort: 1515
+              name: registration
+            - containerPort: 1516
+              name: cluster
+            - containerPort: 55000
+              name: api
+          securityContext:
+            privileged: true
+  volumeClaimTemplates:
+    - metadata:
+        name: pvc-wz
+        namespace: wazuh
+      spec:
+        accessModes:
+          - {{ .Values.disk.accessmode }}
+        storageClassName: {{ .Values.disk.storageclass }}
+        resources:
+          requests:
+            storage: {{ .Values.wazuhmaster.data.size }}

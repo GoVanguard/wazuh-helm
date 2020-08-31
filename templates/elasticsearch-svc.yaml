@@ -1,0 +1,32 @@
+{{- if .Values.elasticsearch.builtin.enabled -}}
+# Copyright (C) 2019 GoVanguard Inc.
+#
+# This program is a free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation.
+# 
+# Portions of code based on code and concepts from 
+# wazuh/wazuh-kubernetes Copyright (C) 2018 Wazuh Inc.
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: wazuh
+  labels:
+    app: elasticsearch
+    io.kompose.service: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+    io.kompose.service: elasticsearch
+  serviceName: elasticsearch
+  ports:
+    - name: es-rest
+      port: 9200
+      targetPort: 9200
+    - name: es-nodes
+      port: 9300
+      targetPort: 9300
+  clusterIP: None
+{{- end }}

@@ -1,0 +1,50 @@
+{{- if .Values.nginx.tls -}}
+# Copyright (C) 2019 GoVanguard Inc.
+#
+# This program is a free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation.
+# 
+# Portions of code based on code and concepts from 
+# wazuh/wazuh-kubernetes Copyright (C) 2018 Wazuh Inc.
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-nginx
+  namespace: wazuh
+  labels:
+    app: wazuh-nginx
+  annotations:
+    domainName: {{ .Values.domain }}
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ .Values.nginx.certArn }}
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: '443'
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: https
+spec:
+  type: LoadBalancer
+  selector:
+    app: wazuh-nginx
+  ports:
+    - name: red-https
+      port: 443
+      targetPort: 443
+{{- else -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-nginx
+  namespace: wazuh
+  labels:
+    app: wazuh-nginx
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: '443'
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: https
+spec:
+  type: LoadBalancer
+  selector:
+    app: wazuh-nginx
+  ports:
+    - name: red-https
+      port: 443
+      targetPort: 443
+{{- end }}

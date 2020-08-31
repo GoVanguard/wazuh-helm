@@ -1,0 +1,28 @@
+elasticsearch:
+  builtin:
+    enabled: true
+  remote:
+    host: Unset
+  data:
+    size: 50Gi
+disk:
+  storageclass: gp2-encrypted-retained
+  accessmode: ReadWriteOnce
+  azure:
+    skuName: Standard_LRS
+nginx:
+  username: wazuh
+  tls: false
+  certArn: Unset
+versions:
+  imagesource: wazuh
+  wazuh: 3.12.3_7.6.2
+  nginx: 3.12.3_7.6.2
+  kibana: 3.12.3_7.6.2
+  elasticsearch: 7.6.2
+wazuhmaster:
+  data:
+    size: 50Gi
+wazuhworker:
+  data:
+    size: 50Gi
